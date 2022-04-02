@@ -317,7 +317,7 @@ func (r *BundleReconciler) getBundleContents(ctx context.Context, pod *corev1.Po
 	}{}
 
 	if err := json.Unmarshal(bundleData, &bd); err != nil {
-		return nil, fmt.Errorf("parse bundle data: %w", err)
+		return nil, fmt.Errorf("parse bundle data %q: %w", string(bundleData), err)
 	}
 
 	gzr, err := gzip.NewReader(bytes.NewReader(bd.Content))

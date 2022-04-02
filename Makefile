@@ -79,7 +79,7 @@ test-unit: setup-envtest ## Run the unit tests
 
 FOCUS := $(if $(TEST),-focus "$(TEST)")
 test-e2e: ginkgo ## Run the e2e tests
-	$(GINKGO) -v -trace -progress $(FOCUS) test/e2e
+	$(GINKGO) -progress $(FOCUS) test/e2e
 
 e2e: KIND_CLUSTER_NAME=rukpak-e2e
 e2e: build-container kind-cluster kind-load cert-mgr kind-load-bundles deploy test-e2e ## Run e2e tests against a kind cluster

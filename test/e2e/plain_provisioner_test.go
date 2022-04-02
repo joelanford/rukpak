@@ -3,8 +3,10 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"strings"
 
+	"github.com/kr/pretty"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -430,7 +432,7 @@ var _ = Describe("plain provisioner bundle", func() {
 							return false
 						}
 						return bundle.Status.Phase == rukpakv1alpha1.PhaseUnpacked
-					}).Should(BeTrue())
+					}).Should(BeTrue(), func() string { return pretty.Sprintf("%s\n\n\n%s\n", bundle, debugPod()) })
 				}
 			})
 
@@ -908,4 +910,19 @@ func conditionsSemanticallyEqual(a, b metav1.Condition) bool {
 
 func conditionsLooselyEqual(a, b metav1.Condition) bool {
 	return a.Type == b.Type && a.Status == b.Status && a.Reason == b.Reason && strings.Contains(b.Message, a.Message)
+}
+
+func debugPod() string {
+	var sb strings.Builder
+	describe1, err1 := exec.Command("kubectl", "-n", "rukpak-system", "describe", "pods", "-l", "core.rukpak.io/owner-kind=Bundle").CombinedOutput()
+	sb.WriteString(string(describe1) + "\n\n\n")
+	if err1 != nil {
+		sb.WriteString(err1.Error() + "\n\n\n")
+	}
+	logs, err2 := exec.Command("kubectl", "-n", "rukpak-system", "logs", "-l", "core.rukpak.io/owner-kind=Bundle").CombinedOutput()
+	sb.WriteString(string(logs) + "\n\n\n")
+	if err2 != nil {
+		sb.WriteString(err2.Error() + "\n\n\n")
+	}
+	return sb.String()
 }
