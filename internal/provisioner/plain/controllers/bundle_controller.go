@@ -96,7 +96,7 @@ func (r *BundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ c
 
 	pod := &corev1.Pod{}
 	if op, err := r.ensureUnpackPod(ctx, bundle, pod); err != nil {
-		u.UpdateStatus(updater.SetBundleInfo(nil), updater.EnsureBundleDigest(""))
+		u.UpdateStatus(updater.EnsureBundleDigest(""))
 		return ctrl.Result{}, updateStatusUnpackFailing(&u, fmt.Errorf("ensure unpack pod: %w", err))
 	} else if op == controllerutil.OperationResultCreated || op == controllerutil.OperationResultUpdated || pod.DeletionTimestamp != nil {
 		updateStatusUnpackPending(&u)
@@ -136,7 +136,6 @@ func (r *BundleReconciler) handlePendingPod(u *updater.Updater, pod *corev1.Pod)
 		}
 	}
 	u.UpdateStatus(
-		updater.SetBundleInfo(nil),
 		updater.EnsureBundleDigest(""),
 		updater.SetPhase(rukpakv1alpha1.PhasePending),
 		updater.EnsureCondition(metav1.Condition{
@@ -150,7 +149,6 @@ func (r *BundleReconciler) handlePendingPod(u *updater.Updater, pod *corev1.Pod)
 
 func (r *BundleReconciler) handleRunningPod(u *updater.Updater) {
 	u.UpdateStatus(
-		updater.SetBundleInfo(nil),
 		updater.EnsureBundleDigest(""),
 		updater.SetPhase(rukpakv1alpha1.PhaseUnpacking),
 		updater.EnsureCondition(metav1.Condition{
@@ -163,7 +161,6 @@ func (r *BundleReconciler) handleRunningPod(u *updater.Updater) {
 
 func (r *BundleReconciler) handleFailedPod(ctx context.Context, u *updater.Updater, pod *corev1.Pod) error {
 	u.UpdateStatus(
-		updater.SetBundleInfo(nil),
 		updater.EnsureBundleDigest(""),
 		updater.SetPhase(rukpakv1alpha1.PhaseFailing),
 	)
@@ -227,7 +224,6 @@ func (r *BundleReconciler) ensureUnpackPod(ctx context.Context, bundle *rukpakv1
 
 func updateStatusUnpackPending(u *updater.Updater) {
 	u.UpdateStatus(
-		updater.SetBundleInfo(nil),
 		updater.EnsureBundleDigest(""),
 		updater.SetPhase(rukpakv1alpha1.PhasePending),
 		updater.EnsureCondition(metav1.Condition{
@@ -277,20 +273,7 @@ func (r *BundleReconciler) handleCompletedPod(ctx context.Context, u *updater.Up
 		return updateStatusUnpackFailing(u, fmt.Errorf("persist bundle objects: %w", err))
 	}
 
-	info := &rukpakv1alpha1.BundleInfo{}
-	for _, obj := range objects {
-		gvk := obj.GetObjectKind().GroupVersionKind()
-		info.Objects = append(info.Objects, rukpakv1alpha1.BundleObject{
-			Group:     gvk.Group,
-			Version:   gvk.Version,
-			Kind:      gvk.Kind,
-			Name:      obj.GetName(),
-			Namespace: obj.GetNamespace(),
-		})
-	}
-
 	u.UpdateStatus(
-		updater.SetBundleInfo(info),
 		updater.EnsureBundleDigest(bundleImageDigest),
 		updater.SetPhase(rukpakv1alpha1.PhaseUnpacked),
 		updater.EnsureCondition(metav1.Condition{

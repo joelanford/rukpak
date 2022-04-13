@@ -18,7 +18,6 @@ package updater
 
 import (
 	"context"
-	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,20 +95,6 @@ func EnsureBundleDigest(digest string) UpdateStatusFunc {
 			return false
 		}
 		status.Digest = digest
-		return true
-	}
-}
-
-func UnsetBundleInfo() UpdateStatusFunc {
-	return SetBundleInfo(nil)
-}
-
-func SetBundleInfo(info *rukpakv1alpha1.BundleInfo) UpdateStatusFunc {
-	return func(status *rukpakv1alpha1.BundleStatus) bool {
-		if reflect.DeepEqual(status.Info, info) {
-			return false
-		}
-		status.Info = info
 		return true
 	}
 }
