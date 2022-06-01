@@ -28,8 +28,9 @@ var (
 type SourceType string
 
 const (
-	SourceTypeImage SourceType = "image"
-	SourceTypeGit   SourceType = "git"
+	SourceTypeImage                 SourceType = "image"
+	SourceTypeGit                   SourceType = "git"
+	SourceTypePersistentVolumeClaim SourceType = "persistentVolumeClaim"
 
 	TypeUnpacked = "Unpacked"
 
@@ -56,10 +57,12 @@ type BundleSpec struct {
 type BundleSource struct {
 	// Type defines the kind of Bundle content being sourced.
 	Type SourceType `json:"type"`
-	// Image is the bundle image that backs the content of this bundle.
+	// Image is the bundle image that backs the content of this Bundle.
 	Image *ImageSource `json:"image,omitempty"`
 	// Git is the git repository that backs the content of this Bundle.
 	Git *GitSource `json:"git,omitempty"`
+	// PersistentVolume is the persistent volume that backs the content of this Bundle.
+	PersistentVolumeClaim *PersistentVolumeClaimSource `json:"persistentVolumeClaim,omitempty"`
 }
 
 type ImageSource struct {
@@ -93,6 +96,11 @@ type GitRef struct {
 	// Commit refers to the commit to checkout from the repository.
 	// The Commit should contain the bundle manifests in the specified directory.
 	Commit string `json:"commit,omitempty"`
+}
+
+type PersistentVolumeClaimSource struct {
+	// Name of the referent.
+	Name string `json:"name"`
 }
 
 type ProvisionerID string

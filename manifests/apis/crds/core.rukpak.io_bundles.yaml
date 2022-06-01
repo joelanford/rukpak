@@ -100,7 +100,7 @@ spec:
                     type: object
                   image:
                     description: Image is the bundle image that backs the content
-                      of this bundle.
+                      of this Bundle.
                     properties:
                       pullSecret:
                         description: ImagePullSecretName contains the name of the
@@ -113,6 +113,16 @@ spec:
                         type: string
                     required:
                     - ref
+                    type: object
+                  persistentVolumeClaim:
+                    description: PersistentVolume is the persistent volume that backs
+                      the content of this Bundle.
+                    properties:
+                      name:
+                        description: Name of the referent.
+                        type: string
+                    required:
+                    - name
                     type: object
                   type:
                     description: Type defines the kind of Bundle content being sourced.
@@ -247,7 +257,7 @@ spec:
                     type: object
                   image:
                     description: Image is the bundle image that backs the content
-                      of this bundle.
+                      of this Bundle.
                     properties:
                       pullSecret:
                         description: ImagePullSecretName contains the name of the
@@ -260,6 +270,16 @@ spec:
                         type: string
                     required:
                     - ref
+                    type: object
+                  persistentVolumeClaim:
+                    description: PersistentVolume is the persistent volume that backs
+                      the content of this Bundle.
+                    properties:
+                      name:
+                        description: Name of the referent.
+                        type: string
+                    required:
+                    - name
                     type: object
                   type:
                     description: Type defines the kind of Bundle content being sourced.

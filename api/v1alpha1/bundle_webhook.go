@@ -76,6 +76,8 @@ func checkBundleSource(r *Bundle) error {
 		if r.Spec.Source.Git == nil {
 			return fmt.Errorf("bundle.spec.source.git must be set for source type \"git\"")
 		}
+	default:
+		return fmt.Errorf("unknown bundle source type %q", typ)
 	}
 	return nil
 }
