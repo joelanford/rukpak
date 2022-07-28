@@ -26,7 +26,6 @@ to quickly create a Cobra application.`,
 
 	rootCmd.AddCommand(
 		newContentCmd(),
-		newCreateCmd(),
 		newRunCmd(),
 	)
 

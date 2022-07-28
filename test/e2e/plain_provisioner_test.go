@@ -785,8 +785,8 @@ var _ = Describe("plain provisioner bundle", func() {
 				Spec: rukpakv1alpha1.BundleSpec{
 					ProvisionerClassName: plain.ProvisionerID,
 					Source: rukpakv1alpha1.BundleSource{
-						Type: rukpakv1alpha1.SourceTypeLocal,
-						Local: &rukpakv1alpha1.LocalSource{
+						Type: rukpakv1alpha1.SourceTypeConfigMaps,
+						ConfigMaps: &rukpakv1alpha1.LocalSource{
 							ConfigMapRef: &rukpakv1alpha1.ConfigMapRef{
 								Name:      configmap.ObjectMeta.Name,
 								Namespace: defaultSystemNamespace,
@@ -846,8 +846,8 @@ var _ = Describe("plain provisioner bundle", func() {
 				Spec: rukpakv1alpha1.BundleSpec{
 					ProvisionerClassName: plain.ProvisionerID,
 					Source: rukpakv1alpha1.BundleSource{
-						Type: rukpakv1alpha1.SourceTypeLocal,
-						Local: &rukpakv1alpha1.LocalSource{
+						Type: rukpakv1alpha1.SourceTypeConfigMaps,
+						ConfigMaps: &rukpakv1alpha1.LocalSource{
 							ConfigMapRef: &rukpakv1alpha1.ConfigMapRef{
 								Name:      "non-exist",
 								Namespace: defaultSystemNamespace,
@@ -923,8 +923,8 @@ var _ = Describe("plain provisioner bundle", func() {
 				Spec: rukpakv1alpha1.BundleSpec{
 					ProvisionerClassName: plain.ProvisionerID,
 					Source: rukpakv1alpha1.BundleSource{
-						Type: rukpakv1alpha1.SourceTypeLocal,
-						Local: &rukpakv1alpha1.LocalSource{
+						Type: rukpakv1alpha1.SourceTypeConfigMaps,
+						ConfigMaps: &rukpakv1alpha1.LocalSource{
 							ConfigMapRef: &rukpakv1alpha1.ConfigMapRef{
 								Name:      configmap.ObjectMeta.Name,
 								Namespace: defaultSystemNamespace,

@@ -262,7 +262,7 @@ func getObjects(bundleFS fs.FS) ([]client.Object, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager, systemNamespace string) error {
 	l := mgr.GetLogger().WithName("controller.bundle")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rukpakv1alpha1.Bundle{}, builder.WithPredicates(
@@ -272,5 +272,6 @@ func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// we need to watch pods to ensure we reconcile events coming from these
 		// pods.
 		Watches(&crsource.Kind{Type: &corev1.Pod{}}, util.MapOwneeToOwnerProvisionerHandler(context.Background(), mgr.GetClient(), l, plain.ProvisionerID, &rukpakv1alpha1.Bundle{})).
+		Watches(&crsource.Kind{Type: &corev1.ConfigMap{}}, util.MapConfigMapToBundlesHandler(context.Background(), mgr.GetClient(), systemNamespace, l, plain.ProvisionerID)).
 		Complete(r)
 }

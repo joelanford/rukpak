@@ -61,6 +61,7 @@ type BundleReconciler struct {
 //+kubebuilder:rbac:groups=core.rukpak.io,resources=bundles/finalizers,verbs=update
 //+kubebuilder:rbac:verbs=get,urls=/bundles/*
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=list;watch;create;delete
+//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=list;watch
 //+kubebuilder:rbac:groups=core,resources=pods/log,verbs=get
 //+kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
 //+kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
@@ -268,7 +269,7 @@ func getObjects(bundleFS fs.FS) ([]client.Object, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager, systemNamespace string) error {
 	l := mgr.GetLogger().WithName("controller.bundle")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rukpakv1alpha1.Bundle{}, builder.WithPredicates(
@@ -278,5 +279,6 @@ func (r *BundleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// we need to watch pods to ensure we reconcile events coming from these
 		// pods.
 		Watches(&crsource.Kind{Type: &corev1.Pod{}}, util.MapOwneeToOwnerProvisionerHandler(context.Background(), mgr.GetClient(), l, registry.ProvisionerID, &rukpakv1alpha1.Bundle{})).
+		Watches(&crsource.Kind{Type: &corev1.ConfigMap{}}, util.MapConfigMapToBundlesHandler(context.Background(), mgr.GetClient(), systemNamespace, l, registry.ProvisionerID)).
 		Complete(r)
 }

@@ -124,9 +124,9 @@ func NewDefaultUnpacker(mgr ctrl.Manager, namespace, provisionerName, unpackImag
 			Reader:          mgr.GetAPIReader(),
 			SecretNamespace: namespace,
 		},
-		rukpakv1alpha1.SourceTypeLocal: &Local{
-			Client: mgr.GetClient(),
-			reader: mgr.GetAPIReader(),
+		rukpakv1alpha1.SourceTypeConfigMaps: &ConfigMaps{
+			Reader:             mgr.GetAPIReader(),
+			ConfigMapNamespace: namespace,
 		},
 		rukpakv1alpha1.SourceTypeUpload: &Upload{
 			baseDownloadURL: baseUploadManagerURL,

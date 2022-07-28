@@ -111,14 +111,19 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "plain.core.rukpak.io",
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&rukpakv1alpha1.BundleDeployment{}: {},
-				&rukpakv1alpha1.Bundle{}:           {},
+		NewCache: cache.BuilderByNamespace(cache.ByNamespaceOptions{
+			NewNamespaceCaches: map[string]cache.NewCacheFunc{
+				systemNamespace: cache.New,
 			},
-			DefaultSelector: cache.ObjectSelector{
-				Label: dependentSelector,
-			},
+			NewDefaultNamespaceCache: cache.BuilderWithOptions(cache.Options{
+				SelectorsByObject: cache.SelectorsByObject{
+					&rukpakv1alpha1.BundleDeployment{}: {},
+					&rukpakv1alpha1.Bundle{}:           {},
+				},
+				DefaultSelector: cache.ObjectSelector{
+					Label: dependentSelector,
+				},
+			}),
 		}),
 	})
 	if err != nil {
@@ -194,7 +199,7 @@ func main() {
 		Storage:    bundleStorage,
 		Finalizers: bundleFinalizers,
 		Unpacker:   unpacker,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, systemNamespace); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", rukpakv1alpha1.BundleKind)
 		os.Exit(1)
 	}
