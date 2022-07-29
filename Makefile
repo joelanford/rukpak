@@ -66,10 +66,11 @@ clean: ## Remove binaries and test artifacts
 
 generate: controller-gen ## Generate code and manifests
 	$(Q)$(CONTROLLER_GEN) crd:crdVersions=v1,generateEmbeddedObjectMeta=true output:crd:dir=./manifests/apis/crds paths=./api/...
-	$(Q)$(CONTROLLER_GEN) webhook paths=./api/... output:stdout > ./manifests/apis/webhooks/resources/webhook.yaml
+	$(Q)$(CONTROLLER_GEN) webhook paths=./api/... paths=./internal/webhook/... output:stdout > ./manifests/apis/webhooks/resources/webhook.yaml
 	$(Q)$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./api/...
 	$(Q)$(CONTROLLER_GEN) rbac:roleName=plain-provisioner-admin paths=./internal/provisioner/plain/... output:stdout > ./manifests/provisioners/plain/resources/cluster_role.yaml
 	$(Q)$(CONTROLLER_GEN) rbac:roleName=registry-provisioner-admin paths=./internal/provisioner/registry/... output:stdout > ./manifests/provisioners/registry/resources/cluster_role.yaml
+	$(Q)$(CONTROLLER_GEN) rbac:roleName=core-admin paths=./internal/webhook/... output:stdout > ./manifests/apis/webhooks/resources/cluster_role.yaml
 
 verify: tidy fmt generate ## Verify the current code generation and lint
 	git diff --exit-code

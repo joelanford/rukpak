@@ -33,6 +33,7 @@ import (
 
 	rukpakv1alpha1 "github.com/operator-framework/rukpak/api/v1alpha1"
 	"github.com/operator-framework/rukpak/internal/version"
+	"github.com/operator-framework/rukpak/internal/webhook"
 )
 
 var (
@@ -103,6 +104,10 @@ func main() {
 
 	if err = (&rukpakv1alpha1.Bundle{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", rukpakv1alpha1.BundleKind)
+		os.Exit(1)
+	}
+	if err = (&webhook.ConfigMap{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ConfigMap")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

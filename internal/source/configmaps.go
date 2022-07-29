@@ -40,19 +40,18 @@ func (o *ConfigMaps) Unpack(ctx context.Context, bundle *rukpakv1alpha1.Bundle) 
 			return nil, fmt.Errorf("get configmap %s/%s: %v", o.ConfigMapNamespace, cmName, err)
 		}
 
-		// TODO: move configmaps immutability check to webhook
+		// TODO: move configmaps immutability check to webhooks
 		//   This would require the webhook to lookup referenced configmaps.
+		//   We would need to implement this in two places:
+		//     1. During bundle create:
+		//         - if referenced configmap already exists, ensure it is immutable
+		//         - if referenced configmap does not exist, allow the bundle to be created anyway
+		//     2. During configmap create:
+		//         - if the configmap is referenced by a bundle, ensure it is immutable
+		//         - if not referenced by a bundle, allow the configmap to be created.
 		if cm.Immutable == nil || *cm.Immutable == false {
-			return nil, fmt.Errorf("configmap %s/%s is not immutable: all bundle configmaps must be immutable", o.ConfigMapNamespace, cmName)
+			return nil, fmt.Errorf("configmap %s/%s is mutable: all bundle configmaps must be immutable", o.ConfigMapNamespace, cmName)
 		}
-
-		// TODO: we should also forbid deletion of configmaps referenced by bundles
-		//   This would require a new validating webhook configuration and deletion handler for configmaps.
-		//   Without this check, an immutable configmap could still be deleted and recreated. Whenever the bundle
-		//   is reconciled again after that (e.g. due to provisioner restart or a watch on configmaps), the new
-		//   configmap content will be unpacked. At that point, if a BundleDeployment references the Bundle either:
-		//     - the deployed objects managed by the BD will be out of sync
-		//     - the BD will pivot inplace with the existing bundle (which shouldn't happen)
 
 		files := map[string][]byte{}
 		for filename, data := range cm.Data {

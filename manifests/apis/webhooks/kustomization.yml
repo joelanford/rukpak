@@ -3,6 +3,8 @@ namePrefix: rukpak-
 
 resources:
   - resources/namespace.yaml
+  - resources/cluster_role.yaml
+  - resources/cluster_role_binding.yaml
   - resources/serviceaccount.yaml
   - resources/service.yaml
   - resources/certificate.yaml
@@ -14,6 +16,7 @@ configurations:
 
 patchesStrategicMerge:
 - patches/cainjection.yaml
+- patches/configmap_namespace_selector.yaml
 
 vars:
 - name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
