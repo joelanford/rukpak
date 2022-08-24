@@ -32,6 +32,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crfinalizer "sigs.k8s.io/controller-runtime/pkg/finalizer"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -198,7 +199,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfgGetter := helmclient.NewActionConfigGetter(mgr.GetConfig(), mgr.GetRESTMapper(), mgr.GetLogger())
+	alwaysSystemNamespace := func(_ client.Object) (string, error) {
+		return systemNamespace, nil
+	}
+
+	cfgGetter := helmclient.NewActionConfigGetter(mgr.GetConfig(), mgr.GetRESTMapper(), mgr.GetLogger(),
+		helmclient.ClientNamespaceMapper(controllers.MapToDeployNamespace),
+		helmclient.StorageNamespaceMapper(alwaysSystemNamespace))
 	if err = (&controllers.BundleDeploymentReconciler{
 		Client:             mgr.GetClient(),
 		Reader:             mgr.GetAPIReader(),

@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -140,7 +139,7 @@ func (r *BundleDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			Message: fmt.Sprintf("Successfully unpacked the %s Bundle", bundle.GetName()),
 		}))
 
-	values, err := r.loadValues(ctx, bd)
+	bdConfig, err := parseConfig(bd)
 	if err != nil {
 		u.UpdateStatus(
 			updater.EnsureCondition(metav1.Condition{
@@ -164,9 +163,7 @@ func (r *BundleDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	bd.SetNamespace(r.ReleaseNamespace)
 	cl, err := r.ActionClientGetter.ActionClientFor(bd)
-	bd.SetNamespace("")
 	if err != nil {
 		u.UpdateStatus(
 			updater.EnsureCondition(metav1.Condition{
@@ -178,7 +175,7 @@ func (r *BundleDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	rel, state, err := r.getReleaseState(cl, bd, chrt, values)
+	rel, state, err := getReleaseState(cl, bd, bdConfig.Namespace, chrt, bdConfig.Values)
 	if err != nil {
 		u.UpdateStatus(
 			updater.EnsureCondition(metav1.Condition{
@@ -192,7 +189,7 @@ func (r *BundleDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	switch state {
 	case stateNeedsInstall:
-		_, err = cl.Install(bd.Name, r.ReleaseNamespace, chrt, values, func(install *action.Install) error {
+		_, err = cl.Install(bd.Name, bdConfig.Namespace, chrt, bdConfig.Values, func(install *action.Install) error {
 			install.CreateNamespace = false
 			return nil
 		})
@@ -210,7 +207,7 @@ func (r *BundleDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		}
 	case stateNeedsUpgrade:
-		_, err = cl.Upgrade(bd.Name, r.ReleaseNamespace, chrt, values)
+		_, err = cl.Upgrade(bd.Name, bdConfig.Namespace, chrt, bdConfig.Values)
 		if err != nil {
 			if isResourceNotFoundErr(err) {
 				err = errRequiredResourceNotFound{err}
@@ -286,7 +283,7 @@ const (
 	stateError        releaseState = "Error"
 )
 
-func (r *BundleDeploymentReconciler) getReleaseState(cl helmclient.ActionInterface, obj metav1.Object, chrt *chart.Chart, values chartutil.Values) (*release.Release, releaseState, error) {
+func getReleaseState(cl helmclient.ActionInterface, obj metav1.Object, namespace string, chrt *chart.Chart, values chartutil.Values) (*release.Release, releaseState, error) {
 	currentRelease, err := cl.Get(obj.GetName())
 	if err != nil && !errors.Is(err, driver.ErrReleaseNotFound) {
 		return nil, stateError, err
@@ -294,7 +291,7 @@ func (r *BundleDeploymentReconciler) getReleaseState(cl helmclient.ActionInterfa
 	if errors.Is(err, driver.ErrReleaseNotFound) {
 		return nil, stateNeedsInstall, nil
 	}
-	desiredRelease, err := cl.Upgrade(obj.GetName(), r.ReleaseNamespace, chrt, values, func(upgrade *action.Upgrade) error {
+	desiredRelease, err := cl.Upgrade(obj.GetName(), namespace, chrt, values, func(upgrade *action.Upgrade) error {
 		upgrade.DryRun = true
 		return nil
 	})
@@ -307,29 +304,6 @@ func (r *BundleDeploymentReconciler) getReleaseState(cl helmclient.ActionInterfa
 		return currentRelease, stateNeedsUpgrade, nil
 	}
 	return currentRelease, stateUnchanged, nil
-}
-
-func (r *BundleDeploymentReconciler) loadValues(ctx context.Context, bd *rukpakv1alpha1.BundleDeployment) (chartutil.Values, error) {
-	data, err := bd.Spec.Config.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	var config map[string]string
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		return nil, err
-	}
-	valuesString := config["values"]
-
-	var values chartutil.Values
-	if valuesString != "" {
-		values, err = chartutil.ReadValues([]byte(valuesString))
-		if err != nil {
-			return nil, err
-		}
-		return values, nil
-	}
-	return nil, nil
 }
 
 func (r *BundleDeploymentReconciler) loadChart(ctx context.Context, bundle *rukpakv1alpha1.Bundle) (*chart.Chart, error) {
