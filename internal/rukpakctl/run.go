@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -31,6 +32,7 @@ type Run struct {
 
 // RunOptions define extra options used for Run.
 type RunOptions struct {
+	BundleDeploymentConfig               *runtime.RawExtension
 	BundleDeploymentProvisionerClassName string
 	BundleProvisionerClassName           string
 	Log                                  func(format string, v ...interface{})
@@ -72,7 +74,7 @@ func (r *Run) Run(ctx context.Context, bundleDeploymentName string, bundle fs.FS
 		"bundleDigest": fmt.Sprintf("%x", digest.Sum(nil)),
 	}
 
-	bd := buildBundleDeployment(bundleDeploymentName, bundleLabels, opts.BundleDeploymentProvisionerClassName, opts.BundleProvisionerClassName)
+	bd := buildBundleDeployment(bundleDeploymentName, bundleLabels, opts.BundleDeploymentConfig, opts.BundleDeploymentProvisionerClassName, opts.BundleProvisionerClassName)
 	if err := cl.Patch(ctx, bd, client.Apply, client.ForceOwnership, client.FieldOwner("rukpakctl")); err != nil {
 		return false, fmt.Errorf("apply bundle deployment: %v", err)
 	}
@@ -111,12 +113,15 @@ func (r *Run) Run(ctx context.Context, bundleDeploymentName string, bundle fs.FS
 	return modified, nil
 }
 
-func buildBundleDeployment(bdName string, bundleLabels map[string]string, biPCN, bPNC string) *unstructured.Unstructured {
+func buildBundleDeployment(bdName string, bundleLabels map[string]string, bdConfig *runtime.RawExtension, bdPCN, bPNC string) *unstructured.Unstructured {
 	// We use unstructured here to avoid problems of serializing default values when sending patches to the apiserver.
 	// If you use a typed object, any default values from that struct get serialized into the JSON patch, which could
 	// cause unrelated fields to be patched back to the default value even though that isn't the intention. Using an
 	// unstructured ensures that the patch contains only what is specified. Using unstructured like this is basically
 	// identical to "kubectl apply -f"
+	if bdConfig == nil {
+		bdConfig = &runtime.RawExtension{Raw: []byte("{}")}
+	}
 	return &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": rukpakv1alpha1.GroupVersion.String(),
 		"kind":       rukpakv1alpha1.BundleDeploymentKind,
@@ -124,7 +129,8 @@ func buildBundleDeployment(bdName string, bundleLabels map[string]string, biPCN,
 			"name": bdName,
 		},
 		"spec": map[string]interface{}{
-			"provisionerClassName": biPCN,
+			"config":               bdConfig,
+			"provisionerClassName": bdPCN,
 			"template": map[string]interface{}{
 				"metadata": map[string]interface{}{
 					"labels": bundleLabels,
