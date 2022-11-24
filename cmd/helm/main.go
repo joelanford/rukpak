@@ -32,6 +32,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crfinalizer "sigs.k8s.io/controller-runtime/pkg/finalizer"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -195,8 +196,30 @@ func main() {
 		bundle.WithStorage(bundleStorage),
 	}
 
-	cfgGetter := helmclient.NewActionConfigGetter(mgr.GetConfig(), mgr.GetRESTMapper(), mgr.GetLogger())
-	acg := helmclient.NewActionClientGetter(cfgGetter)
+	cfgGetter, err := helmclient.NewActionConfigGetter(mgr.GetConfig(), mgr.GetRESTMapper(), mgr.GetLogger(),
+		helmclient.ClientNamespaceMapper(func(object client.Object) (string, error) {
+			bd := object.(*rukpakv1alpha1.BundleDeployment)
+			cfg, err := helm.ParseConfig(bd)
+			if err != nil {
+				return "", fmt.Errorf("parse bundle deployment config: %v", err)
+			}
+			if cfg.Namespace == "" {
+				return fmt.Sprintf("%s-system", bd.Name), nil
+			}
+			return cfg.Namespace, nil
+		}),
+		helmclient.StorageNamespaceMapper(func(object client.Object) (string, error) {
+			return systemNamespace, nil
+		}))
+	if err != nil {
+		setupLog.Error(err, "unable to setup helm action config getter")
+		os.Exit(1)
+	}
+	acg, err := helmclient.NewActionClientGetter(cfgGetter)
+	if err != nil {
+		setupLog.Error(err, "unable to setup helm action client getter")
+		os.Exit(1)
+	}
 	commonBDProvisionerOptions := []bundledeployment.Option{
 		bundledeployment.WithReleaseNamespace(ns),
 		bundledeployment.WithActionClientGetter(acg),

@@ -256,9 +256,7 @@ func (p *bundledeploymentProvisioner) reconcile(ctx context.Context, bd *rukpakv
 		return ctrl.Result{}, err
 	}
 
-	bd.SetNamespace(p.releaseNamespace)
 	cl, err := p.acg.ActionClientFor(bd)
-	bd.SetNamespace("")
 	if err != nil {
 		meta.SetStatusCondition(&bd.Status.Conditions, metav1.Condition{
 			Type:    rukpakv1alpha1.TypeInstalled,

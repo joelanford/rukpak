@@ -38,38 +38,52 @@ func HandleBundle(ctx context.Context, fsys fs.FS, bundle *rukpakv1alpha1.Bundle
 }
 
 func HandleBundleDeployment(ctx context.Context, fsys fs.FS, bd *rukpakv1alpha1.BundleDeployment) (*chart.Chart, chartutil.Values, error) {
-	values, err := loadValues(bd)
+	cfg, err := ParseConfig(bd)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("parse bundle deployment config: %v", err)
 	}
 	chart, err := getChart(fsys)
 	if err != nil {
 		return nil, nil, err
 	}
-	return chart, values, nil
+	return chart, cfg.Values, nil
 }
 
-func loadValues(bd *rukpakv1alpha1.BundleDeployment) (chartutil.Values, error) {
+type Config struct {
+	Namespace string
+	Values    chartutil.Values
+}
+
+func ParseConfig(bd *rukpakv1alpha1.BundleDeployment) (*Config, error) {
+	type config struct {
+		Namespace string `json:"namespace,omitempty"`
+		Values    string `json:"values,omitempty"`
+	}
+
 	data, err := json.Marshal(bd.Spec.Config)
 	if err != nil {
-		return nil, fmt.Errorf("marshal JSON for deployment config: %v", err)
+		return nil, fmt.Errorf("marshal bundle deployment config to JSON: %v", err)
 	}
-	var config map[string]string
-	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("parse deployment config: %v", err)
+
+	var cfg config
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
 	}
-	valuesString := config["values"]
+	valuesString := cfg.Values
 
 	var values chartutil.Values
-	if valuesString == "" {
-		return nil, nil
+	if cfg.Values != "" {
+		var err error
+		values, err = chartutil.ReadValues([]byte(valuesString))
+		if err != nil {
+			return nil, fmt.Errorf("read chart values: %v", err)
+		}
 	}
 
-	values, err = chartutil.ReadValues([]byte(valuesString))
-	if err != nil {
-		return nil, fmt.Errorf("read chart values: %v", err)
-	}
-	return values, nil
+	return &Config{
+		Namespace: cfg.Namespace,
+		Values:    values,
+	}, nil
 }
 
 func getChart(chartfs fs.FS) (*chart.Chart, error) {
