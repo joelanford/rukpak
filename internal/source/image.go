@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"path/filepath"
 	"strings"
 
 	"github.com/nlepage/go-tarfs"
@@ -148,7 +149,7 @@ func (i *Image) getDesiredPodApplyConfig(bundle *rukpakv1alpha1.Bundle) *applyco
 			WithContainers(applyconfigurationcorev1.Container().
 				WithName(imageBundleUnpackContainerName).
 				WithImage(bundle.Spec.Source.Image.Ref).
-				WithCommand("/bin/unpack", "--bundle-dir", "/").
+				WithCommand("/bin/unpack", "--bundle-dir", filepath.Join("/", bundle.Spec.Source.Image.Directory)).
 				WithVolumeMounts(applyconfigurationcorev1.VolumeMount().
 					WithName("util").
 					WithMountPath("/bin"),

@@ -45,6 +45,7 @@ import (
 	"github.com/operator-framework/rukpak/internal/finalizer"
 	"github.com/operator-framework/rukpak/internal/provisioner/bundle"
 	"github.com/operator-framework/rukpak/internal/provisioner/bundledeployment"
+	"github.com/operator-framework/rukpak/internal/provisioner/catalogd"
 	"github.com/operator-framework/rukpak/internal/provisioner/plain"
 	"github.com/operator-framework/rukpak/internal/provisioner/registry"
 	"github.com/operator-framework/rukpak/internal/source"
@@ -250,6 +251,15 @@ func main() {
 		bundle.WithHandler(bundle.HandlerFunc(registry.HandleBundle)),
 	)...); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", rukpakv1alpha1.BundleKind, "provisionerID", registry.ProvisionerID)
+		os.Exit(1)
+	}
+
+	if err := bundle.SetupProvisioner(mgr, systemNsCluster.GetCache(), systemNs, append(
+		commonBundleProvisionerOptions,
+		bundle.WithProvisionerID(catalogd.FBCProvisionerID),
+		bundle.WithHandler(bundle.HandlerFunc(catalogd.HandleBundle)),
+	)...); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", rukpakv1alpha1.BundleKind, "provisionerID", catalogd.FBCProvisionerID)
 		os.Exit(1)
 	}
 

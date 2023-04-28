@@ -169,7 +169,7 @@ spec:
                               directory:
                                 description: Directory refers to the location of the
                                   bundle within the git repository. Directory is optional
-                                  and if not set defaults to ./manifests.
+                                  and if not set defaults to the root of the git repository.
                                 type: string
                               ref:
                                 description: Ref configures the git source to clone
@@ -255,6 +255,12 @@ spec:
                             description: Image is the bundle image that backs the
                               content of this bundle.
                             properties:
+                              directory:
+                                description: Directory refers to the location of the
+                                  bundle within the container image. Directory is
+                                  optional and if not set defaults to the root of
+                                  the container image.
+                                type: string
                               pullSecret:
                                 description: ImagePullSecretName contains the name
                                   of the image pull secret in the namespace that the

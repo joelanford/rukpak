@@ -82,6 +82,9 @@ type ImageSource struct {
 	Ref string `json:"ref"`
 	// ImagePullSecretName contains the name of the image pull secret in the namespace that the provisioner is deployed.
 	ImagePullSecretName string `json:"pullSecret,omitempty"`
+	// Directory refers to the location of the bundle within the container image.
+	// Directory is optional and if not set defaults to the root of the container image.
+	Directory string `json:"directory,omitempty"`
 }
 
 type GitSource struct {
@@ -89,7 +92,7 @@ type GitSource struct {
 	// Repository is required and the URL should be parsable by a standard git tool.
 	Repository string `json:"repository"`
 	// Directory refers to the location of the bundle within the git repository.
-	// Directory is optional and if not set defaults to ./manifests.
+	// Directory is optional and if not set defaults to the root of the git repository.
 	Directory string `json:"directory,omitempty"`
 	// Ref configures the git source to clone a specific branch, tag, or commit
 	// from the specified repo. Ref is required, and exactly one field within Ref
